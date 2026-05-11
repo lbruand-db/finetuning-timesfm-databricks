@@ -1,0 +1,37 @@
+# Default configuration for the TimesFM 2.5 LoRA fine-tune on Databricks.
+# Notebooks read this via `yaml.safe_load(open("../conf/default.yaml"))`.
+
+unity_catalog:
+  catalog: lucasbruand_catalog
+  schema: timesfm_inverter
+  raw_volume: raw                 # /Volumes/<catalog>/<schema>/raw
+  hf_cache_volume: hf_cache       # /Volumes/<catalog>/<schema>/hf_cache
+  silver_table: inverter_readings_silver
+  train_table: inverter_readings_train
+  test_table: inverter_readings_test
+  registered_model: lora_v1       # full name: <catalog>.<schema>.<registered_model>
+
+mlflow:
+  experiment_path: /Users/lucas.bruand@databricks.com/timesfm-inverter
+
+model:
+  base_id: google/timesfm-2.5-200m-transformers
+  dtype: bfloat16
+
+training:
+  context_len: 480                # 5 days at 15-min cadence; multiple of 32
+  horizon_len: 96                 # next 24 h
+  epochs: 10
+  batch_size: 32
+  lr: 1.0e-4
+  num_samples: 10000              # random training windows pre-sampled
+  lora_r: 8
+  lora_alpha: 16
+  lora_dropout: 0.05
+  seed: 42
+  test_days: 5                    # tail days held out per inverter
+
+data:
+  freq_minutes: 15
+  target_col: ac_power_kw
+  series_id_col: inverter_id

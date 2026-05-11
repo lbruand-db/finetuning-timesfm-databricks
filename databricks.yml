@@ -1,0 +1,61 @@
+bundle:
+  name: finetuning-timesfm-databricks
+
+variables:
+  catalog:
+    description: Unity Catalog used by the demo.
+    default: lucasbruand_catalog
+  schema:
+    description: Schema inside the catalog.
+    default: timesfm_inverter
+
+resources:
+  jobs:
+    timesfm_inverter_pipeline:
+      name: timesfm-inverter-lora
+      tasks:
+        - task_key: setup
+          notebook_task:
+            notebook_path: notebooks/00_setup.py
+          environment_key: gpu
+        - task_key: ingest
+          depends_on:
+            - task_key: setup
+          notebook_task:
+            notebook_path: notebooks/01_ingest_inverter_data.py
+          environment_key: gpu
+        - task_key: split
+          depends_on:
+            - task_key: ingest
+          notebook_task:
+            notebook_path: notebooks/02_eda_and_split.py
+          environment_key: gpu
+        - task_key: finetune
+          depends_on:
+            - task_key: split
+          notebook_task:
+            notebook_path: notebooks/03_finetune_lora.py
+          environment_key: gpu
+        - task_key: evaluate
+          depends_on:
+            - task_key: finetune
+          notebook_task:
+            notebook_path: notebooks/04_evaluate.py
+          environment_key: gpu
+        - task_key: register
+          depends_on:
+            - task_key: evaluate
+          notebook_task:
+            notebook_path: notebooks/05_register_and_serve.py
+          environment_key: gpu
+      environments:
+        - environment_key: gpu
+          spec:
+            client: "2"
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
