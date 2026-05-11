@@ -81,12 +81,12 @@ push the fine-tune to a wider fleet.
 ### Data layout on Databricks
 
 ```
-Catalog:   ml_demos                   (existing or to create)
-Schema:    ml_demos.timesfm_inverter
-Volume:    ml_demos.timesfm_inverter.raw     (Kaggle CSVs as-is)
-Tables:    ml_demos.timesfm_inverter.inverter_readings_silver
-           ml_demos.timesfm_inverter.inverter_readings_train
-           ml_demos.timesfm_inverter.inverter_readings_test
+Catalog:   lucasbruand_catalog                   (existing or to create)
+Schema:    lucasbruand_catalog.timesfm_inverter
+Volume:    lucasbruand_catalog.timesfm_inverter.raw     (Kaggle CSVs as-is)
+Tables:    lucasbruand_catalog.timesfm_inverter.inverter_readings_silver
+           lucasbruand_catalog.timesfm_inverter.inverter_readings_train
+           lucasbruand_catalog.timesfm_inverter.inverter_readings_test
 ```
 
 `inverter_readings_silver` schema:
@@ -124,7 +124,7 @@ Train/test split = last 5 days of each inverter held out, mirroring the
 │                                                  │               │
 │                                                  ▼               │
 │                                   UC Model Registry              │
-│                                   `ml_demos.timesfm_inverter.lora_v1` │
+│                                   `lucasbruand_catalog.timesfm_inverter.lora_v1` │
 │                                                  │               │
 │                                                  ▼               │
 │                              (optional) Model Serving endpoint   │
@@ -206,7 +206,7 @@ calls for the things autolog misses with PEFT:
   `eval_table.json` with columns `inverter_id, mae_zeroshot, mae_lora, improvement_pct`.
 - LoRA adapter saved via `model.save_pretrained(local_dir)` and logged
   with `mlflow.log_artifact(local_dir, artifact_path="lora_adapter")`.
-- Final model registered with `mlflow.pyfunc.log_model(..., registered_model_name="ml_demos.timesfm_inverter.lora_v1")`.
+- Final model registered with `mlflow.pyfunc.log_model(..., registered_model_name="lucasbruand_catalog.timesfm_inverter.lora_v1")`.
 
 ### pyfunc wrapper (`src/model.py`)
 
@@ -275,9 +275,7 @@ we should be honest about the proxy data and report whatever we find.
 2. **Kaggle auth on Databricks** — `kagglehub` needs `KAGGLE_USERNAME` /
    `KAGGLE_KEY`. Where do we store them? Databricks secret scope
    `kaggle` with `username` / `key` is the proposed answer.
-3. **UC catalog name** — `ml_demos` is a placeholder; confirm with the
-   target workspace.
-4. **Base model caching** — first run downloads ~400 MB from HF. Cache
+3. **Base model caching** — first run downloads ~400 MB from HF. Cache
    to a Volume so re-runs are instant?
 
 ## 11. Next steps
