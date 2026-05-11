@@ -56,14 +56,24 @@ print(f"Test:  {spark.table(test_fqn).count():,} rows → {test_fqn}")
 
 display(
     spark.sql(f"""
-        SELECT plant_id, inverter_id,
-               COUNT(*)             AS n_train,
-               (SELECT COUNT(*) FROM {test_fqn} t
-                WHERE t.plant_id = s.plant_id AND t.inverter_id = s.inverter_id) AS n_test,
-               MIN(ts) AS train_min, MAX(ts) AS train_max
-        FROM {train_fqn} s
-        GROUP BY plant_id, inverter_id
-        ORDER BY plant_id, inverter_id
+        WITH train_agg AS (
+            SELECT plant_id, inverter_id,
+                   COUNT(*) AS n_train,
+                   MIN(ts)  AS train_min,
+                   MAX(ts)  AS train_max
+            FROM {train_fqn}
+            GROUP BY plant_id, inverter_id
+        ),
+        test_agg AS (
+            SELECT plant_id, inverter_id, COUNT(*) AS n_test
+            FROM {test_fqn}
+            GROUP BY plant_id, inverter_id
+        )
+        SELECT s.plant_id, s.inverter_id,
+               s.n_train, t.n_test, s.train_min, s.train_max
+        FROM train_agg s
+        LEFT JOIN test_agg t USING (plant_id, inverter_id)
+        ORDER BY s.plant_id, s.inverter_id
     """)
 )
 
