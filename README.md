@@ -1,5 +1,8 @@
 # finetuning-timesfm-databricks
 
+[![Databricks](https://img.shields.io/badge/Databricks-FF3621?logo=databricks&logoColor=white)](https://www.databricks.com/)
+[![Asset Bundles](https://img.shields.io/badge/Databricks_Asset_Bundles-FF3621?logo=databricks&logoColor=white)](https://docs.databricks.com/aws/en/dev-tools/bundles)
+
 Fine-tune **TimesFM 2.5** with a **LoRA** adapter on Databricks, in
 the framing of a datacenter **power-inverter** forecasting task. The
 fine-tune itself is per-device time-series forecasting: given the last
