@@ -1,6 +1,6 @@
 # SPEC — Fine-tuning TimesFM 2.5 on Databricks for Datacenter Power-Inverter Forecasting
 
-Status: Draft v0.1
+Status: Draft v0.2
 Owner: lucas.bruand@databricks.com
 Last updated: 2026-05-11
 
@@ -54,7 +54,13 @@ Why this one:
 - Two grid-connected PV plants in India, ~22 inverters each.
 - 34 days at 15-min cadence → ~3,260 obs / inverter.
 - Schema is exactly the shape we want: `(DATE_TIME, PLANT_ID, SOURCE_KEY, DC_POWER, AC_POWER, DAILY_YIELD, TOTAL_YIELD)`.
-- CC0 / public on Kaggle; downloadable via `kagglehub` or direct CSV.
+- CC0 / public on Kaggle.
+
+**No Kaggle API for v1.** To avoid the `KAGGLE_USERNAME` / `KAGGLE_KEY`
+plumbing in the demo, we stage the 4 CSVs into the UC Volume manually
+(one-time drag-and-drop into `…/raw/`). Notebook `01_ingest…` reads
+straight from the Volume — no auth, no secret scope. Migrating to
+`kagglehub` + Databricks secrets is a v2 chore.
 
 Why this is a **legitimate proxy** for a datacenter UPS inverter:
 
@@ -83,11 +89,17 @@ push the fine-tune to a wider fleet.
 ```
 Catalog:   lucasbruand_catalog                   (existing or to create)
 Schema:    lucasbruand_catalog.timesfm_inverter
-Volume:    lucasbruand_catalog.timesfm_inverter.raw     (Kaggle CSVs as-is)
+Volumes:   lucasbruand_catalog.timesfm_inverter.raw       (Kaggle CSVs, hand-uploaded)
+           lucasbruand_catalog.timesfm_inverter.hf_cache  (HF Hub cache for the base model)
 Tables:    lucasbruand_catalog.timesfm_inverter.inverter_readings_silver
            lucasbruand_catalog.timesfm_inverter.inverter_readings_train
            lucasbruand_catalog.timesfm_inverter.inverter_readings_test
 ```
+
+The `hf_cache` Volume is set as `HF_HOME=/Volumes/lucasbruand_catalog/timesfm_inverter/hf_cache`
+at the top of every notebook. First run pulls the ~400 MB TimesFM 2.5
+checkpoint from HF Hub into the Volume; subsequent runs (and serverless
+GPU restarts) reuse it from UC — no re-download.
 
 `inverter_readings_silver` schema:
 
@@ -133,9 +145,10 @@ Train/test split = last 5 days of each inverter held out, mirroring the
 
 ### Compute
 
-- **Serverless GPU** (notebook attached to a GPU-enabled serverless
-  environment). Single A10G or H100 is plenty — base model is 200M params
-  in bf16, LoRA adds ~1–4M trainable, batch fits comfortably.
+- **Serverless GPU — A10**, single device. Base model is 200M params in
+  bf16, LoRA adds ~1–4M trainable, batch fits comfortably; no need to
+  reach for H100. If A10 turns out to be capacity-constrained at run
+  time, falling back to H100 is a one-line environment change.
 - No DLT, no Spark cluster for training. We load Delta → pandas →
   `torch.utils.data.Dataset` in-process.
 
@@ -269,22 +282,19 @@ we should be honest about the proxy data and report whatever we find.
 
 ## 10. Open questions
 
-1. **Compute SKU** — which serverless GPU tier do we target by default?
-   Need to confirm A10 availability vs H100 in the user's workspace
-   region.
-2. **Kaggle auth on Databricks** — `kagglehub` needs `KAGGLE_USERNAME` /
-   `KAGGLE_KEY`. Where do we store them? Databricks secret scope
-   `kaggle` with `username` / `key` is the proposed answer.
-3. **Base model caching** — first run downloads ~400 MB from HF. Cache
-   to a Volume so re-runs are instant?
+_(All v0.1 open questions resolved in v0.2 — see §3 dataset / §4 compute.)_
+
+- None outstanding. Next round will surface from implementation.
 
 ## 11. Next steps
 
-1. Confirm UC catalog name and serverless GPU availability.
-2. Scaffold the repo per §5 (notebooks + `src/` + DAB).
-3. Implement notebook 00 → 03 against the Kaggle solar dataset.
-4. Run training, capture WAPE numbers.
-5. Iterate on `lora_r` / `context_len` if §8 acceptance not met.
+1. Scaffold the repo per §5 (notebooks + `src/` + DAB).
+2. Create `lucasbruand_catalog.timesfm_inverter` schema + the `raw` and
+   `hf_cache` Volumes.
+3. Hand-upload the 4 Kaggle CSVs into the `raw` Volume.
+4. Implement notebook 00 → 03 against the staged data.
+5. Run training on A10 serverless GPU, capture WAPE numbers.
+6. Iterate on `lora_r` / `context_len` if §8 acceptance not met.
 
 ---
 
