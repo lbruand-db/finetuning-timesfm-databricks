@@ -18,6 +18,48 @@ an open analogue.
 See [`SPECS/SPEC.md`](SPECS/SPEC.md) for the design doc — dataset
 choice, hyperparameters, MLflow & UC integration, acceptance criteria.
 
+## Model
+
+**Base** — [`google/timesfm-2.5-200m-transformers`](https://huggingface.co/google/timesfm-2.5-200m-transformers):
+a ~200 M-parameter decoder-only transformer pre-trained by Google
+Research on a broad mix of univariate time series. The model applies
+its own internal RevIN normalisation per-context, so we feed raw kW
+values directly — **no external scaling**.
+
+**Adapter** — [LoRA](https://arxiv.org/abs/2106.09685) with
+`target_modules="all-linear"`, `r=8`, `α=16`, dropout 0.05. That's
+~1.4 M trainable parameters on top of ~232 M frozen (~0.6%) — enough
+to specialise the base to the inverter fleet without rewriting it.
+Loss is computed inside the base model when `future_values=` is
+passed; we use AdamW + cosine LR schedule, gradient clip 1.0, bf16.
+
+**Task** — univariate AC-power forecasting, per inverter:
+
+| input                                          | output                                       |
+|------------------------------------------------|----------------------------------------------|
+| last 480 readings (5 days × 15-min cadence)    | next 96 readings (24 h × 15-min cadence)     |
+| shape `(B, 480)` float kW                      | shape `(B, 96)` float kW                     |
+
+Training samples are random 480/96 windows sliced from each inverter's
+history (à la Chronos-2). Validation = the last full window per inverter.
+
+**Inference artefact** — registered to Unity Catalog as a `pyfunc`
+wrapper at `lucasbruand_catalog.timesfm_inverter.lora_v1`. Only the
+~5 MB LoRA adapter lives in the artefact store; the base checkpoint
+is pulled from HF Hub into the `hf_cache` Volume the first time the
+model is loaded, then reused.
+
+```python
+import mlflow, pandas as pd
+
+model = mlflow.pyfunc.load_model(
+    "models:/lucasbruand_catalog.timesfm_inverter.lora_v1/<version>"
+)
+df_in = pd.DataFrame({"context": [last_480_ac_power_kw_per_inverter]})
+df_out = model.predict(df_in)
+# df_out["forecast"] → list[float] of length 96 per row
+```
+
 ## What lives here
 
 ```
