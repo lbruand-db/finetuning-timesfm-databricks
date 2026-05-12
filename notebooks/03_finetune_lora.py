@@ -136,6 +136,11 @@ model.print_trainable_parameters()
 
 import mlflow
 
+# Serverless compute doesn't expose `spark.mlflow.modelRegistryUri`, which
+# `MlflowClient()` tries to read by default. Pin both URIs explicitly so
+# the implicit lookup never runs.
+mlflow.set_tracking_uri("databricks")
+mlflow.set_registry_uri("databricks-uc")
 mlflow.set_experiment(cfg["mlflow"]["experiment_path"])
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=tr["lr"], weight_decay=0.01)
@@ -214,7 +219,10 @@ with mlflow.start_run(run_name="timesfm25-inverter-lora") as run:
             model.save_pretrained(local_adapter_dir)
             print(f"  ✓ new best — saved adapter to {local_adapter_dir}")
 
-    mlflow.log_artifact(local_adapter_dir, artifact_path="lora_adapter")
+    # log_artifacts (plural) uploads the *contents* of the dir under the
+    # given artifact_path so the adapter files land at
+    # lora_adapter/adapter_config.json etc. — what PeftModel expects.
+    mlflow.log_artifacts(local_adapter_dir, artifact_path="lora_adapter")
     mlflow.log_metric("best_val_loss", best_val_loss)
 
     print(f"\nDone. run_id={run.info.run_id}  best val loss={best_val_loss:.4f}")

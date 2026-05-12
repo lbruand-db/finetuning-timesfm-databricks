@@ -14,44 +14,57 @@ resources:
     timesfm_inverter_pipeline:
       name: timesfm-inverter-lora
       tasks:
+        # ---- CPU tasks: SQL DDL, CSV ingest, train/test split ----
         - task_key: setup
           notebook_task:
             notebook_path: notebooks/00_setup.py
-          environment_key: gpu
+          environment_key: cpu
         - task_key: ingest
           depends_on:
             - task_key: setup
           notebook_task:
             notebook_path: notebooks/01_ingest_inverter_data.py
-          environment_key: gpu
+          environment_key: cpu
         - task_key: split
           depends_on:
             - task_key: ingest
           notebook_task:
             notebook_path: notebooks/02_eda_and_split.py
-          environment_key: gpu
+          environment_key: cpu
+
+        # ---- GPU tasks: training, evaluation, model registration ----
         - task_key: finetune
           depends_on:
             - task_key: split
           notebook_task:
             notebook_path: notebooks/03_finetune_lora.py
           environment_key: gpu
+          compute:
+            hardware_accelerator: GPU_1xA10
         - task_key: evaluate
           depends_on:
             - task_key: finetune
           notebook_task:
             notebook_path: notebooks/04_evaluate.py
           environment_key: gpu
+          compute:
+            hardware_accelerator: GPU_1xA10
         - task_key: register
           depends_on:
             - task_key: evaluate
           notebook_task:
             notebook_path: notebooks/05_register_and_serve.py
           environment_key: gpu
+          compute:
+            hardware_accelerator: GPU_1xA10
+
       environments:
+        - environment_key: cpu
+          spec:
+            environment_version: "2"
         - environment_key: gpu
           spec:
-            client: "2"
+            environment_version: "4"     # serverless GPU base env
 
 targets:
   dev:

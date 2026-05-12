@@ -38,7 +38,9 @@ print(f"Will register as: {registered_name}")
 
 import mlflow
 
-# UC-backed registry, not the legacy workspace registry.
+# Serverless compute doesn't expose `spark.mlflow.modelRegistryUri`. Pin
+# both URIs explicitly; UC-backed registry, not the legacy one.
+mlflow.set_tracking_uri("databricks")
 mlflow.set_registry_uri("databricks-uc")
 
 # Recover the latest training run's adapter.
@@ -60,9 +62,12 @@ print(f"Adapter staged at: {local_adapter}")
 # COMMAND ----------
 
 # Small text files act as artefacts so the pyfunc can read them at load time
-# without having to bake them into the wrapper class.
-staging = "/tmp/timesfm_inverter_pyfunc"
-os.makedirs(staging, exist_ok=True)
+# without having to bake them into the wrapper class. Use mkdtemp so a stale
+# `/tmp/timesfm_inverter_pyfunc/` from an earlier attempt (possibly owned by
+# a different process on serverless) can never block us.
+import tempfile
+
+staging = tempfile.mkdtemp(prefix="timesfm_pyfunc_")
 Path(staging, "base_model_id.txt").write_text(md["base_id"])
 Path(staging, "context_len.txt").write_text(str(tr["context_len"]))
 Path(staging, "horizon_len.txt").write_text(str(tr["horizon_len"]))

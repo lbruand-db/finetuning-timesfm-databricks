@@ -42,6 +42,10 @@ test_fqn = f"{uc['catalog']}.{uc['schema']}.{uc['test_table']}"
 # successful run in the experiment when running interactively.
 import mlflow
 
+# Serverless compute doesn't expose `spark.mlflow.modelRegistryUri`.
+mlflow.set_tracking_uri("databricks")
+mlflow.set_registry_uri("databricks-uc")
+
 run_id = None
 try:
     run_id = dbutils.jobs.taskValues.get(
