@@ -89,7 +89,7 @@ example_out = pd.DataFrame({
 signature = infer_signature(example_in, example_out)
 
 with mlflow.start_run(run_name="register-timesfm-inverter-lora"):
-    mlflow.pyfunc.log_model(
+    model_info = mlflow.pyfunc.log_model(
         artifact_path="model",
         python_model=TimesFMInverterModel(),
         artifacts={
@@ -113,24 +113,21 @@ with mlflow.start_run(run_name="register-timesfm-inverter-lora"):
         registered_model_name=registered_name,
     )
 
-print(f"Registered → {registered_name}")
+version = model_info.registered_model_version
+print(f"Registered → {registered_name} (version {version})")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Smoke test — load latest version and predict
+# MAGIC ## Smoke test — load just-registered version and predict
+# MAGIC
+# MAGIC We use the version captured from `log_model` directly. UC's MLflow
+# MAGIC registry doesn't support `order_by` on `search_model_versions`, so
+# MAGIC fetching "latest" that way would fail.
 
 # COMMAND ----------
 
-from mlflow import MlflowClient
-
-client = MlflowClient()
-latest = client.search_model_versions(
-    f"name='{registered_name}'", order_by=["version_number DESC"], max_results=1
-)[0]
-print(f"Latest registered version: {latest.version}")
-
-loaded = mlflow.pyfunc.load_model(f"models:/{registered_name}/{latest.version}")
+loaded = mlflow.pyfunc.load_model(f"models:/{registered_name}/{version}")
 
 # Build a real-looking context from the silver table
 silver = spark.table(f"{uc['catalog']}.{uc['schema']}.{uc['silver_table']}")
