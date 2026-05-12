@@ -1,5 +1,6 @@
 # finetuning-timesfm-databricks
 
+[![CI](https://github.com/lbruand-db/finetuning-timesfm-databricks/actions/workflows/ci.yml/badge.svg)](https://github.com/lbruand-db/finetuning-timesfm-databricks/actions/workflows/ci.yml)
 [![Databricks](https://img.shields.io/badge/Databricks-FF3621?logo=databricks&logoColor=white)](https://www.databricks.com/)
 [![Asset Bundles](https://img.shields.io/badge/Databricks_Asset_Bundles-FF3621?logo=databricks&logoColor=white)](https://docs.databricks.com/aws/en/dev-tools/bundles)
 
