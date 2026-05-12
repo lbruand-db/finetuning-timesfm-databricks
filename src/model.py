@@ -26,17 +26,17 @@ class TimesFMInverterModel(mlflow.pyfunc.PythonModel):
     """
 
     def load_context(self, context: mlflow.pyfunc.PythonModelContext) -> None:
-        from peft import PeftModel
-        from transformers import TimesFm2_5ModelForPrediction
+        # Lazy imports: peft + transformers are heavy and only present in
+        # the model-serving environment, never in the local test env.
+        from peft import PeftModel  # ty: ignore[unresolved-import]
+        from transformers import TimesFm2_5ModelForPrediction  # ty: ignore[unresolved-import]
 
         base_id = self._read_text(context.artifacts["base_model_id"]).strip()
         hf_cache = context.artifacts.get("hf_cache")
         if hf_cache:
             os.environ.setdefault("HF_HOME", hf_cache)
 
-        base = TimesFm2_5ModelForPrediction.from_pretrained(
-            base_id, torch_dtype=torch.bfloat16
-        )
+        base = TimesFm2_5ModelForPrediction.from_pretrained(base_id, torch_dtype=torch.bfloat16)
         self.model = PeftModel.from_pretrained(base, context.artifacts["lora_dir"])
         self.model.eval()
         self.horizon_len = int(self._read_text(context.artifacts["horizon_len"]))
@@ -63,8 +63,7 @@ class TimesFMInverterModel(mlflow.pyfunc.PythonModel):
             arr = np.asarray(c, dtype=np.float32)
             if len(arr) < self.context_len:
                 raise ValueError(
-                    f"Each context must have at least {self.context_len} points; "
-                    f"got {len(arr)}."
+                    f"Each context must have at least {self.context_len} points; got {len(arr)}."
                 )
             ctx_arrays.append(arr[-self.context_len :])
 

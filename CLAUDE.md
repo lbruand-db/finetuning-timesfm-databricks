@@ -10,9 +10,16 @@ global default).
 
 ```bash
 uv run --no-project python -m py_compile <file.py>      # quick syntax check
-uv sync --group dev                                     # install test deps
+uv sync --group dev                                     # install test/lint deps
 uv run pytest                                           # run the test suite
+uv run ruff check . && uv run ruff format --check .     # lint + format check
+uv run ty check                                         # type check (src/ only)
 ```
+
+CI runs all of these on every push to `main` and on every PR — see
+`.github/workflows/ci.yml`. The `notebooks/` directory is excluded from
+ruff via `pyproject.toml` because the Databricks magic comments aren't
+valid Python syntax that ruff should reason about.
 
 ## Tests
 

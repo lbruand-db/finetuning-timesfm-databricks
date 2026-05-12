@@ -12,9 +12,44 @@ dev = [
     "pandas",
     "torch",
     "mlflow",
+    "ruff>=0.7",
+    "ty>=0.0.1a1",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-ra"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = [
+    # Databricks notebook source files — `# MAGIC %pip ...` / `# COMMAND ----------`
+    # markers are meaningful to the runtime, not to a linter.
+    "notebooks",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line-length is enforced by the formatter, not the linter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "B011",  # asserts in tests are fine
+]
+
+[tool.ty.environment]
+python-version = "3.11"
+
+[tool.ty.src]
+include = ["src"]

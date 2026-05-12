@@ -6,7 +6,7 @@ the full ~400 MB checkpoint and a GPU-ish runtime. Instead we cover:
 1. Input validation in `predict()` (missing column, short context).
 2. The `_read_text` static helper.
 """
-import numpy as np
+
 import pandas as pd
 import pytest
 

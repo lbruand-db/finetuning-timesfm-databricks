@@ -77,16 +77,12 @@ class TimeSeriesRandomWindowDataset(Dataset):
     def __len__(self) -> int:
         return len(self.samples)
 
-    def __getitem__(self, i: int):
-        idx, start = self.samples[i]
+    def __getitem__(self, index: int):
+        idx, start = self.samples[index]
         series = self.series_list[idx]
         end = start + self.context_len + self.horizon_len
-        context = torch.tensor(
-            series[start : start + self.context_len], dtype=torch.float32
-        )
-        target = torch.tensor(
-            series[start + self.context_len : end], dtype=torch.float32
-        )
+        context = torch.tensor(series[start : start + self.context_len], dtype=torch.float32)
+        target = torch.tensor(series[start + self.context_len : end], dtype=torch.float32)
         return context, target
 
 
@@ -110,5 +106,5 @@ class TimeSeriesLastWindowDataset(Dataset):
     def __len__(self) -> int:
         return len(self.items)
 
-    def __getitem__(self, i: int):
-        return self.items[i]
+    def __getitem__(self, index: int):
+        return self.items[index]

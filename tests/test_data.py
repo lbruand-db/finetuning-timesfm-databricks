@@ -8,7 +8,6 @@ from src.data import (
     series_from_silver,
 )
 
-
 # ---------- series_from_silver -------------------------------------------
 
 
@@ -17,10 +16,15 @@ def _silver(rows):
 
 
 def test_series_from_silver_groups_by_id():
-    pdf = _silver([
-        ("A", 0, 1.0), ("A", 1, 2.0), ("A", 2, 3.0),
-        ("B", 0, 10.0), ("B", 1, 20.0),
-    ])
+    pdf = _silver(
+        [
+            ("A", 0, 1.0),
+            ("A", 1, 2.0),
+            ("A", 2, 3.0),
+            ("B", 0, 10.0),
+            ("B", 1, 20.0),
+        ]
+    )
     ids, arrs = series_from_silver(pdf, "inverter_id", "ac_power_kw")
     assert ids == ["A", "B"]
     np.testing.assert_array_equal(arrs[0], [1.0, 2.0, 3.0])
@@ -29,18 +33,27 @@ def test_series_from_silver_groups_by_id():
 
 def test_series_from_silver_sorts_by_ts():
     # Rows arrive out of timestamp order.
-    pdf = _silver([
-        ("A", 2, 3.0), ("A", 0, 1.0), ("A", 1, 2.0),
-    ])
+    pdf = _silver(
+        [
+            ("A", 2, 3.0),
+            ("A", 0, 1.0),
+            ("A", 1, 2.0),
+        ]
+    )
     _, arrs = series_from_silver(pdf, "inverter_id", "ac_power_kw")
     np.testing.assert_array_equal(arrs[0], [1.0, 2.0, 3.0])
 
 
 def test_series_from_silver_drops_nan():
-    pdf = _silver([
-        ("A", 0, 1.0), ("A", 1, np.nan), ("A", 2, 3.0),
-        ("B", 0, 10.0), ("B", 1, 20.0),
-    ])
+    pdf = _silver(
+        [
+            ("A", 0, 1.0),
+            ("A", 1, np.nan),
+            ("A", 2, 3.0),
+            ("B", 0, 10.0),
+            ("B", 1, 20.0),
+        ]
+    )
     ids, arrs = series_from_silver(pdf, "inverter_id", "ac_power_kw")
     # A had a NaN → dropped entirely
     assert ids == ["B"]
@@ -129,7 +142,7 @@ def test_last_window_one_item_per_long_series():
 def test_last_window_skips_short_series():
     pool = [
         np.arange(100, dtype=np.float32),
-        np.arange(5, dtype=np.float32),    # too short
+        np.arange(5, dtype=np.float32),  # too short
         np.arange(50, dtype=np.float32),
     ]
     ds = TimeSeriesLastWindowDataset(pool, context_len=10, horizon_len=5)
