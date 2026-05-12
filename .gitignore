@@ -4,6 +4,7 @@ __pycache__/
 .ipynb_checkpoints/
 .venv/
 .env
+.pytest_cache/
 
 # MLflow & local training scratch
 mlruns/

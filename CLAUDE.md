@@ -10,7 +10,18 @@ global default).
 
 ```bash
 uv run --no-project python -m py_compile <file.py>      # quick syntax check
+uv sync --group dev                                     # install test deps
+uv run pytest                                           # run the test suite
 ```
+
+## Tests
+
+`tests/` covers `src/` only (the notebooks aren't unit-testable —
+they're notebook-source-format and run on Databricks). Lightweight by
+design: no transformers/peft/TimesFM checkpoint required. Tests for
+`src/model.py` only exercise the input-validation paths in `predict`,
+not the actual model forward pass — load the heavy model on Databricks
+instead.
 
 ## Notebook format
 
